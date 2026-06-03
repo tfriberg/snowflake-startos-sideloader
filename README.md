@@ -27,7 +27,6 @@ To learn how to use this template to create your own StartOS service package, se
 - [Dependencies](#dependencies)
 - [Limitations and Differences](#limitations-and-differences)
 - [What Is Unchanged from Upstream](#what-is-unchanged-from-upstream)
-- [Contributing](#contributing)
 - [Quick Reference for AI Consumers](#quick-reference-for-ai-consumers)
 
 ---
@@ -116,12 +115,6 @@ None.
 ## What Is Unchanged from Upstream
 
 The service is identical to upstream. There are no modifications.
-
----
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for build instructions and development workflow.
 
 ---
 
