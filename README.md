@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="icon.svg" alt="Hello World Logo" width="21%">
+  <img src="icon.svg" alt="Snowflake Logo" width="21%">
 </p>
 
-# Hello World on StartOS
+# Snowflake StartOS
 
 > **Upstream repo:** <https://github.com/Start9Labs/hello-world>
 

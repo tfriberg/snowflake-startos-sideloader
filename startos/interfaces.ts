@@ -8,9 +8,9 @@ export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
     protocol: 'http',
   })
   const ui = sdk.createInterface(effects, {
-    name: i18n('Web UI'),
+    name: i18n('Snowflake Proxy'),
     id: 'ui',
-    description: i18n('The web interface of Hello World'),
+    description: i18n('Snowflake Proxy web interface'),
     type: 'ui',
     masked: false,
     schemeOverride: null,

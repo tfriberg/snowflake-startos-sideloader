@@ -1,20 +1,20 @@
 export const short = {
-  en_US: 'Bare bones example of a StartOS service',
-  es_ES: 'Ejemplo básico de un servicio de StartOS',
-  de_DE: 'Minimales Beispiel eines StartOS-Dienstes',
-  pl_PL: 'Podstawowy przykład usługi StartOS',
-  fr_FR: "Exemple minimaliste d'un service StartOS",
+  en_US: 'Tor Snowflake Proxy',
+  es_ES: 'Proxy Tor Snowflake',
+  de_DE: 'Tor Snowflake Proxy',
+  pl_PL: 'Proxy Tor Snowflake',
+  fr_FR: 'Proxy Tor Snowflake',
 }
 
 export const long = {
   en_US:
-    'Hello World is a template service that provides examples of basic StartOS features.',
+    'Run a Snowflake proxy to help censored users access the Tor network by proxying their traffic through volunteer-run proxies.',
   es_ES:
-    'Hello World es un servicio de plantilla que proporciona ejemplos de las características básicas de StartOS.',
+    'Ejecuta un proxy Snowflake para ayudar a usuarios censurados a acceder a la red Tor proxyando su tráfico a través de proxies gestionados por voluntarios.',
   de_DE:
-    'Hello World ist ein Vorlagen-Dienst, der Beispiele für grundlegende StartOS-Funktionen bietet.',
+    'Betreiben Sie einen Snowflake-Proxy, um zensierten Benutzern den Zugang zum Tor-Netzwerk zu ermöglichen, indem Sie ihren Verkehr über freiwillige Proxys leiten.',
   pl_PL:
-    'Hello World to szablon usługi, który zawiera przykłady podstawowych funkcji StartOS.',
+    'Uruchom proxy Snowflake, aby pomóc cenzurowanym użytkownikom w dostępie do sieci Tor, przekazując ich ruch przez proxy prowadzone przez wolontariuszy.',
   fr_FR:
-    'Hello World est un service modèle qui fournit des exemples des fonctionnalités de base de StartOS.',
+    'Exécutez un proxy Snowflake pour aider les utilisateurs censurés à accéder au réseau Tor en relayant leur trafic via des proxies gérés par des volontaires.',
 }

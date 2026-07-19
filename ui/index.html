@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Snowflake Status</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; text-align: center; }
+    h1 { color: #333; }
+    #stats { font-size: 1.5em; margin-top: 20px; color: #555; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+  <h1>🌐 Snowflake Proxy Status</h1>
+  <div id="stats">Loading...</div>
+
+  <script>
+    async function fetchStats() {
+      try {
+        // MUST match the service name in docker-compose.yml (e.g., snowflake-proxy)
+        const res = await fetch('http://snowflake-proxy:9999/internal/metrics');
+        if (!res.ok) throw new Error('Network response was not ok');
+
+        const text = await res.text();
+
+        // Parse Prometheus format for active connections
+        const match = text.match(/tor_snowflake_proxy_connections_current\s+(\d+)/);
+        const connections = match ? match[1] : "0";
+
+        document.getElementById('stats').innerHTML =
+          `<p>Active Connections: <strong>${connections}</strong></p>`;
+        document.getElementById('stats').className = '';
+      } catch (e) {
+        document.getElementById('stats').innerText = "Waiting for proxy data...";
+        document.getElementById('stats').className = "error";
+      }
+    }
+
+    fetchStats();
+    setInterval(fetchStats, 5000); // Refresh every 5 seconds
+  </script>
+</body>
+</html>

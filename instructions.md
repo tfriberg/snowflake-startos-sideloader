@@ -1,25 +1,43 @@
-# Hello World
+# Snowflake Proxy
+Snowflake is a system to defeat internet censorship. People who are censored can use Snowflake to access the internet. Their connection goes through Snowflake proxies, which are run by volunteers.
 
-You've installed Hello World — there's nothing to configure and nothing to set up. This page covers how to open the page it serves and where to read more. (If you're a developer, Hello World is also the recommended packaging template.)
+If your internet access is not censored, you should consider running a Snowflake proxy to help users in censored networks. There is no need to worry about which websites people are accessing through your proxy. Their visible browsing IP address will match their Tor exit node, not yours.
 
-## Documentation
+## Usage
+Snowflake is currently deployed as a pluggable transport for Tor.
 
-- [Hello World upstream docs](https://github.com/Start9Labs/hello-world/blob/master/README.md) — the README for the web server this package runs.
-- [StartOS Packaging Guide](https://docs.start9.com/packaging) — how to build a StartOS service package from that template.
+## Using Snowflake with Tor
+To use the Snowflake client with Tor, you will need to add the appropriate Bridge and ClientTransportPlugin lines to your torrc file. See the client README for more information on building and running the Snowflake client.
 
-## What you get on StartOS
+## Running a Snowflake Proxy
+You can contribute to Snowflake by running a Snowflake proxy. We have the option to run a proxy in your browser or as a standalone Go program. See our [community documentation](https://community.torproject.org/relay/setup/snowflake/) for more details.
 
-- **A running web server** that serves a single static page.
-- **Nothing to configure and no actions** — the service starts on its own and is immediately usable.
+## FAQ
+**Q: How does it work?**
+In the Tor use-case:
 
-## Getting set up
+1. Volunteers visit websites that host the 'snowflake' proxy, run a snowflake web extension, or use a standalone proxy.
+2. Tor clients automatically find available browser proxies via the Broker
+(the domain fronted signaling channel).
+3. Tor client and browser proxy establish a WebRTC peer connection.
+4. Proxy connects to some relay.
+5. Tor occurs.
 
-There's no setup wizard, no admin password, no first-run prompt — Hello World is usable the moment it starts. To view the page it serves:
+More detailed information about how clients, snowflake proxies, and the Broker
+fit together on the way...
 
-1. Open Hello World's **Dashboard** tab.
-2. Click the **Web UI** interface to open the served page in your browser.
+**Q: What are the benefits of this PT compared with other PTs?**
+Snowflake combines the advantages of flashproxy and meek. Primarily:
 
-## Limitations
+It has the convenience of Meek, but can support magnitudes more
+users with negligible CDN costs. (Domain fronting is only used for brief
+signalling / NAT-piercing to setup the P2P WebRTC DataChannels which handle
+the actual traffic.)
 
-- Hello World is intentionally minimal. It is not a useful service on its own; it exists to demonstrate the StartOS packaging system.
-- The page content is static and cannot be customized through the StartOS UI.
+Arbitrarily high numbers of volunteer proxies are possible like in
+flashproxy, but NATs are no longer a usability barrier - no need for
+manual port forwarding!
+
+**Q: Why is this called Snowflake?**
+It utilizes the "ICE" negotiation via WebRTC, and also involves a great
+abundance of ephemeral and short-lived (and special!) volunteer proxies...
