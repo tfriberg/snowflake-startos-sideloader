@@ -1,6 +1,6 @@
 import { i18n } from './i18n'
 import { sdk } from './sdk'
-import { uiPort } from './utils'
+import { proxyUdpPortCount, proxyUdpStartPort, uiPort } from './utils'
 
 export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
   const uiMulti = sdk.MultiHost.of(effects, 'ui-multi')
@@ -8,9 +8,11 @@ export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
     protocol: 'http',
   })
   const ui = sdk.createInterface(effects, {
-    name: i18n('Snowflake Proxy'),
+    name: i18n('Dashboard'),
     id: 'ui',
-    description: i18n('Snowflake Proxy web interface'),
+    description: i18n(
+      'NAT type, bandwidth and connections relayed by this proxy',
+    ),
     type: 'ui',
     masked: false,
     schemeOverride: null,
@@ -20,6 +22,22 @@ export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
   })
 
   const uiReceipt = await uiMultiOrigin.export([ui])
+
+  const proxyMulti = sdk.MultiHost.of(effects, 'proxy-udp')
+  const proxyOrigin = await proxyMulti.bindPortRange({
+    internalStartPort: proxyUdpStartPort,
+    externalStartPort: proxyUdpStartPort,
+    numberOfPorts: proxyUdpPortCount,
+  })
+  await proxyOrigin.export(
+    sdk.createRangeInterface(effects, {
+      id: 'proxy-udp',
+      name: i18n('Proxy Relay Ports'),
+      description: i18n(
+        'UDP port range used for WebRTC/ICE peer connections with other Tor clients. Forward this range on your router to get an unrestricted NAT type.',
+      ),
+    }),
+  )
 
   return [uiReceipt]
 })

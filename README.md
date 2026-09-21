@@ -2,120 +2,146 @@
   <img src="icon.svg" alt="Snowflake Logo" width="21%">
 </p>
 
-# Snowflake StartOS (sideload)
+# Snowflake on StartOS
 
-Initial build of the Snowflake sideloader for StartOS.
+> Everything not listed in this document should behave the same as upstream
+> Snowflake. If a feature, setting, or behavior is not mentioned here, the
+> upstream documentation is accurate and fully applicable — see the
+> Documentation section of `instructions.md` for links.
 
-Built on MacOS Sequoia (imagine me being able to spell that) with instructions from Leo AI (Brave browser). 
-Tested and confirmed working by the way of sideloading on StartOS running in a Proxmox VM.
+[Snowflake](https://snowflake.torproject.org/) is a Tor pluggable transport that gets people in censored networks onto Tor by relaying their traffic through volunteer-run proxies. This package runs the standalone Go proxy from the Tor Project's own image, with every setting left at upstream's defaults, and adds a small web dashboard that turns the proxy's hourly log summaries into NAT type, bandwidth and connection figures.
 
-Proof is in the pudding:
-
-<img width="1224" height="720" alt="image" src="https://github.com/user-attachments/assets/a6a353c6-545c-4b7b-9445-553d4863e250" />
+- **Upstream repo:** <https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake>
+- **Wrapper repo:** <https://github.com/Start9-Community/snowflake-startos-sideloader>
 
 ---
 
-Snowflake is a censorship-evasion pluggable transport using WebRTC, inspired by Flashproxy.
+## Table of Contents
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**
+- [Image and Container Runtime](#image-and-container-runtime)
+- [Volume and Data Layout](#volume-and-data-layout)
+- [File Models](#file-models)
+- [Dependencies](#dependencies)
+- [Network Access and Interfaces](#network-access-and-interfaces)
+- [Installation and First-Run Flow](#installation-and-first-run-flow)
+- [Actions](#actions)
+- [Tasks](#tasks)
+- [Health Checks](#health-checks)
+- [Backups and Restore](#backups-and-restore)
+- [Limitations and Differences](#limitations-and-differences)
+- [Quick Reference for AI Consumers](#quick-reference-for-ai-consumers)
 
-- [Structure of this Repository](#structure-of-this-repository)
-- [Usage](#usage)
-  - [Using Snowflake with Tor](#using-snowflake-with-tor)
-  - [Running a Snowflake Proxy](#running-a-snowflake-proxy)
-  - [Using the Snowflake Library with Other Applications](#using-the-snowflake-library-with-other-applications)
-- [Test Environment](#test-environment)
-- [FAQ](#faq)
-- [More info and links](#more-info-and-links)
+---
 
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+## Image and Container Runtime
 
-### Structure of this Repository
+One image, built by this repo's `Dockerfile`: the statically linked `proxy` binary and the GeoIP databases are copied out of the Tor Project's published `thetorproject/snowflake-proxy` image into an Alpine base that also carries `busybox-extras` for its `httpd`. Upstream's image is `FROM scratch`, with no shell, which is the only reason the package does not run it as-is.
 
-- `broker/` contains code for the Snowflake broker
-- `doc/` contains Snowflake documentation and manpages
-- `client/` contains the Tor pluggable transport client and client library code
-- `common/` contains generic libraries used by multiple pieces of Snowflake
-- `proxy/` contains code for the Go standalone Snowflake proxy
-- `probetest/` contains code for a NAT probetesting service
-- `server/` contains the Tor pluggable transport server and server library code
+| Property      | Value                                                 |
+| ------------- | ----------------------------------------------------- |
+| Image         | `snowflake`, built from `./Dockerfile`                |
+| Base          | `alpine`, with `thetorproject/snowflake-proxy`'s binary |
+| Architectures | x86_64, aarch64                                       |
+| User          | root                                                  |
 
-### Usage
+Two daemons share one subcontainer:
 
-Snowflake is currently deployed as a pluggable transport for Tor.
+| Subcontainer | Daemon      | Command                                                              | Purpose                                              |
+| ------------ | ----------- | -------------------------------------------------------------------- | ---------------------------------------------------- |
+| `snowflake`  | `proxy`     | `snowflake-proxy -log /data/snowflake.log -metrics -metrics-address 127.0.0.1` | The proxy itself                             |
+| `snowflake`  | `dashboard` | `busybox-extras httpd -f -p 80 -h /www`                              | Serves the stats page, rendered per request by a CGI |
 
-#### Using Snowflake with Tor
+The proxy runs with upstream's defaults — broker, STUN servers, relay pattern, unlimited capacity, hourly summaries — plus two flags. `-log` makes it append its event log (start, NAT type, hourly summary) to a file on the data volume as well as to stderr, which is what the dashboard reads; `-metrics` binds a Prometheus endpoint on loopback port 9999, which is what the health check probes, since the proxy opens no other port. Nothing reads the metrics beyond that.
 
-To use the Snowflake client with Tor, you will need to add the appropriate `Bridge` and `ClientTransportPlugin` lines to your [torrc](https://2019.www.torproject.org/docs/tor-manual.html.en) file. See the [client README](client) for more information on building and running the Snowflake client.
+The dashboard is `dashboard/index.cgi`, installed as `/www/cgi-bin/index.cgi`. `httpd` runs it for every request to `/`: one `awk` pass over the log produces the page, so it is always current and there is no generator loop. The page refreshes itself every five minutes.
 
-#### Running a Snowflake Proxy
+## Volume and Data Layout
 
-You can contribute to Snowflake by running a Snowflake proxy. We have the option to run a proxy in your browser or as a standalone Go program. See our [community documentation](https://community.torproject.org/relay/setup/snowflake/) for more details. 
+One volume, holding the proxy's log.
 
-#### Using the Snowflake Library with Other Applications
+| Volume | Mount Point | Purpose                                                  |
+| ------ | ----------- | -------------------------------------------------------- |
+| `main` | `/data`     | `snowflake.log`, the event log the dashboard is built from |
 
-Snowflake can be used as a Go API, and adheres to the [v2.1 pluggable transports specification](). For more information on using the Snowflake Go library, see the [Snowflake library documentation](doc/using-the-snowflake-library.md).
+The log is append-only and grows by a few lines an hour: it holds no client addresses (upstream's logging scrubs them unless `-unsafe-logging` is passed, which the package never does). Nothing else is stored.
 
-### Test Environment
+## File Models
 
-There is a Docker-based test environment at https://github.com/cohosh/snowbox.
+None. The proxy takes no configuration file, and the package passes no options the user can change.
 
-### FAQ
+## Dependencies
 
-**Q: How does it work?**
+None.
 
-In the Tor use-case:
+## Network Access and Interfaces
 
-1. Volunteers visit websites that host the 'snowflake' proxy, run a snowflake [web extension](https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake-webext), or use a standalone proxy.
-2. Tor clients automatically find available browser proxies via the Broker
-(the domain fronted signaling channel).
-3. Tor client and browser proxy establish a WebRTC peer connection.
-4. Proxy connects to some relay.
-5. Tor occurs.
+One interface, serving the dashboard. The proxy listens on UDP ports 30000-30049 (`-ephemeral-ports-range 30000:31000`) for WebRTC/ICE peer connections; forwarding that range on the router is what turns a restricted proxy into an unrestricted one (see instructions.md).
 
-More detailed information about how clients, snowflake proxies, and the Broker
-fit together on the way...
+| Interface | Id   | Type | Port | Description                                             |
+| --------- | ---- | ---- | ---- | ------------------------------------------------------- |
+| Dashboard | `ui` | ui   | 80   | NAT type, bandwidth and connections relayed by this proxy |
 
-**Q: What are the benefits of this PT compared with other PTs?**
+The port is bound on the `ui-multi` MultiHost over plain HTTP and is not masked. The page is read-only and holds nothing sensitive, but it does reveal that this server runs a Snowflake proxy and how much it relays.
 
-Snowflake combines the advantages of flashproxy and meek. Primarily:
+The proxy makes outbound connections only: HTTPS to the Snowflake broker to be matched with clients, STUN to learn its public address and NAT type, WebRTC (UDP, on ephemeral ports) to the clients themselves, and WebSocket to the Snowflake bridge it relays them to. It listens for nothing, so no port forwarding is needed — though a NAT that lets UDP in freely ("unrestricted" on the dashboard) can serve clients whose own NAT is restrictive, and is worth having if the router allows it.
 
-- It has the convenience of Meek, but can support magnitudes more
-users with negligible CDN costs. (Domain fronting is only used for brief
-signalling / NAT-piercing to setup the P2P WebRTC DataChannels which handle
-the actual traffic.)
+## Installation and First-Run Flow
 
-- Arbitrarily high numbers of volunteer proxies are possible like in
-flashproxy, but NATs are no longer a usability barrier - no need for
-manual port forwarding!
+Nothing to configure. Install, start, and the proxy registers with the broker on its own; the dashboard's NAT type appears within a minute or two, and the first bandwidth figures after the first full hour. No task, no account, no credential.
 
-**Q: Why is this called Snowflake?**
+## Actions
 
-It utilizes the "ICE" negotiation via WebRTC, and also involves a great
-abundance of ephemeral and short-lived (and special!) volunteer proxies...
+None.
 
-### More info and links
+## Tasks
 
-We have more documentation in the [Snowflake wiki](https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/-/wikis/home) and at https://snowflake.torproject.org/.
+None. This package raises no tasks, so the service is never held on a prompt and its ordinary controls are always available.
 
+## Health Checks
 
-##### -- Android AAR Reproducible Build Setup  --
+One check per daemon.
 
-Using `gomobile` it is possible to build snowflake as shared libraries for all
-the architectures supported by Android.  This is in the _.gitlab-ci.yml_, which
-runs in GitLab CI.  It is also possible to run this setup in a Virtual Machine
-using [vagrant](https://www.vagrantup.com/).  Just run `vagrant up` and it will
-create and provision the VM.  `vagrant ssh` to get into the VM to use it as a
-development environment.
+| Check       | Displayed         | Method                                   |
+| ----------- | ----------------- | ---------------------------------------- |
+| `proxy`     | "Snowflake Proxy" | Loopback port 9999 (metrics) is listening |
+| `dashboard` | "Dashboard"       | Port 80 is listening                     |
 
-##### uTLS Settings
+**Snowflake Proxy** failing means the proxy process is not running — the metrics listener is bound at startup, before any network activity, so a failure is a crash, not a connectivity problem, and the service logs carry the reason. The check says nothing about whether the proxy is reaching the broker or serving anyone; the dashboard's NAT type staying at "unknown" and the hourly summaries showing zero connections are the signals for that, and both usually mean outbound UDP or the broker is blocked.
 
-Snowflake communicate with broker that serves as signaling server with TLS based domain fronting connection, which may be identified by its usage of Go language TLS stack.
+**Dashboard** failing means `httpd` did not start, which on a working image does not happen.
 
-uTLS is a software library designed to initiate the TLS Client Hello fingerprint of browsers or other popular software's TLS stack to evade censorship based on TLS client hello fingerprint with `-utls-imitate` . You can use `-version` to see a list of supported values.
+## Backups and Restore
 
-Depending on client and server configuration, it may not always work as expected as not all extensions are correctly implemented.
+The `main` volume is copied wholesale — `sdk.Backups.ofVolumes('main')` — so a backup is the event log, and a restored instance starts with its dashboard history intact. The proxy has no identity and nothing to re-establish: it registers with the broker afresh on every start.
 
-You can also remove SNI (Server Name Indication) from client hello to evade censorship with `-utls-nosni`, not all servers supports this.
+## Limitations and Differences
+
+1. **Mostly no configuration.** Capacity, broker, STUN servers, relay pattern and the summary interval all stay at upstream's defaults; there is no action to change them. The one exception is `-ephemeral-ports-range`, narrowed from the OS's wide default to a fixed 50-port UDP range (30000-30049) so operators have something forwardable on their router for NAT traversal.
+2. **Statistics come from the log, not from the proxy.** The dashboard adds up the hourly summaries the proxy writes, so it lags real time by up to an hour, shows nothing for the first hour, and starts from zero on a fresh install.
+3. **The dashboard's history is only as old as the log.** Deleting `snowflake.log` resets it.
+
+---
+
+## Quick Reference for AI Consumers
+
+```yaml
+package_id: snowflake
+image: snowflake # built from ./Dockerfile on thetorproject/snowflake-proxy
+architectures:
+  - x86_64
+  - aarch64
+subcontainers:
+  - snowflake # proxy + dashboard httpd
+volumes:
+  main: /data # snowflake.log
+file_models: []
+startos_managed_env_vars: []
+dependencies: []
+interfaces:
+  ui: { type: ui, port: 80 }
+actions: []
+tasks: []
+health_checks:
+  - proxy # displayed "Snowflake Proxy"
+  - dashboard # displayed "Dashboard"
+```

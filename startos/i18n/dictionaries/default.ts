@@ -2,15 +2,18 @@ export const DEFAULT_LANG = 'en_US'
 
 const dict = {
   // main.ts
-  'Starting Snowflake Proxy!': 0,
-  'Snowflake Proxy!': 1,
-  'Snowflake proxy is running': 2,
-  'Snowflake proxy is not running': 3,
+  'Starting Snowflake!': 0,
+  'Snowflake Proxy': 1,
+  'The proxy is running': 2,
+  'The proxy is not running': 3,
+  Dashboard: 4,
+  'The dashboard is ready': 5,
+  'The dashboard is not ready': 6,
 
   // interfaces.ts
-  'Snowflake Proxy': 4,
-  'Snowflake Proxy web interface': 5,
-
+  'NAT type, bandwidth and connections relayed by this proxy': 7,
+  'Proxy Relay Ports': 8,
+  'UDP port range used for WebRTC/ICE peer connections with other Tor clients. Forward this range on your router to get an unrestricted NAT type.': 9,
 } as const
 
 /**

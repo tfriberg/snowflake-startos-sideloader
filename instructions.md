@@ -1,43 +1,31 @@
-# Snowflake Proxy
-Snowflake is a system to defeat internet censorship. People who are censored can use Snowflake to access the internet. Their connection goes through Snowflake proxies, which are run by volunteers.
+# Snowflake
 
-If your internet access is not censored, you should consider running a Snowflake proxy to help users in censored networks. There is no need to worry about which websites people are accessing through your proxy. Their visible browsing IP address will match their Tor exit node, not yours.
+## Documentation
 
-## Usage
-Snowflake is currently deployed as a pluggable transport for Tor.
+- [Snowflake](https://snowflake.torproject.org/) — the Tor Project's page on what Snowflake is and who it helps.
+- [Running a Snowflake proxy](https://community.torproject.org/relay/setup/snowflake/) — the Tor Project's guide for proxy operators.
 
-## Using Snowflake with Tor
-To use the Snowflake client with Tor, you will need to add the appropriate Bridge and ClientTransportPlugin lines to your torrc file. See the client README for more information on building and running the Snowflake client.
+## What you get on StartOS
 
-## Running a Snowflake Proxy
-You can contribute to Snowflake by running a Snowflake proxy. We have the option to run a proxy in your browser or as a standalone Go program. See our [community documentation](https://community.torproject.org/relay/setup/snowflake/) for more details.
+A Snowflake proxy that starts relaying for censored Tor users the moment the service is running, and a **Dashboard** interface showing what it has done: the NAT type it detected, bandwidth relayed today, this week, this month and all-time, and an hour-by-hour chart of the last day.
 
-## FAQ
-**Q: How does it work?**
-In the Tor use-case:
+There is nothing to configure and no account to make. The proxy needs no open ports, never learns what anyone is browsing, and the traffic it carries leaves the Tor network from a Tor bridge — not from your address.
 
-1. Volunteers visit websites that host the 'snowflake' proxy, run a snowflake web extension, or use a standalone proxy.
-2. Tor clients automatically find available browser proxies via the Broker
-(the domain fronted signaling channel).
-3. Tor client and browser proxy establish a WebRTC peer connection.
-4. Proxy connects to some relay.
-5. Tor occurs.
+## Getting set up
 
-More detailed information about how clients, snowflake proxies, and the Broker
-fit together on the way...
+1. Start the service.
+2. Open the **Dashboard** from the Dashboard tab.
 
-**Q: What are the benefits of this PT compared with other PTs?**
-Snowflake combines the advantages of flashproxy and meek. Primarily:
+The NAT type appears a minute or so after each start. Bandwidth and connection figures are added once an hour, so the first ones show up after the first full hour; the page refreshes itself every five minutes.
 
-It has the convenience of Meek, but can support magnitudes more
-users with negligible CDN costs. (Domain fronting is only used for brief
-signalling / NAT-piercing to setup the P2P WebRTC DataChannels which handle
-the actual traffic.)
+## Using Snowflake
 
-Arbitrarily high numbers of volunteer proxies are possible like in
-flashproxy, but NATs are no longer a usability barrier - no need for
-manual port forwarding!
+### NAT type
 
-**Q: Why is this called Snowflake?**
-It utilizes the "ICE" negotiation via WebRTC, and also involves a great
-abundance of ephemeral and short-lived (and special!) volunteer proxies...
+**unrestricted** means clients behind strict NATs can reach your proxy, which is the most useful kind of proxy to run. **restricted** means only clients with permissive NATs can; the proxy still helps, just fewer people.
+
+To turn a restricted proxy into an unrestricted one, forward **UDP ports 30000-30049** on your router to this server's local IP address. The proxy listens for peer connections somewhere in that range rather than one fixed port, so the whole range needs to be forwarded, not a single port. How to do this varies by router — look for "port forwarding," "port range forwarding," or "virtual servers" in its admin interface. After forwarding, restart the service and check back in a minute or so; the NAT Type tile should read **unrestricted**.
+
+### Reading the figures
+
+Everything on the dashboard comes from the proxy's own hourly summaries, so a figure is up to an hour behind and "0 connections" in the first hour is normal. The history lives on this server and survives restarts and updates.
