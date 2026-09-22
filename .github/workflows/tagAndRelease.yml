@@ -1,9 +1,11 @@
 name: Tag and Release
 
 on:
-  push:
-    branches: ['main']
-    paths-ignore: ['*.md']
+  # Disabled in this personal fork: releases are published from
+  # Start9-Community/snowflake-startos-sideloader, which holds the
+  # registry/S3 credentials. Manual dispatch only, to avoid failed
+  # runs and duplicate/confusing builds.
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
